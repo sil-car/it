@@ -9,8 +9,10 @@ from pathlib import Path
 from datetime import datetime,timezone,timedelta
 
 # Set global variable.
-OFFSET = 4 * 24 * 60 * 60 # 1 day
+DAY_IN_SECONDS = 24 * 60 * 60
+OFFSET = 4 * DAY_IN_SECONDS
 
+# Creates a date OFFSET before "now"
 example_date = datetime.fromtimestamp(time.time() - OFFSET, timezone(timedelta(hours=1)))
 
 found = 0
@@ -24,9 +26,13 @@ if path_to_file.exists():
         for line in lines:
             raw_line = line.strip()
 
+            # Separate out date from rest of line
             substring_start = raw_line.find('[')
             substring_end = raw_line.find(']')
-            log_date = datetime.strptime(raw_line[(substring_start+1):(substring_end)], "%d/%b/%Y:%H:%M:%S %z")
+            date_part_of_line = raw_line[(substring_start+1):(substring_end)]
+
+            # Turn string into datetime object
+            log_date = datetime.strptime(date_part_of_line, "%d/%b/%Y:%H:%M:%S %z")
 
             if log_date > example_date:
                 found = 1
