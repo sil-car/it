@@ -1,32 +1,32 @@
 #!/usr/bin/python3
 
-# Verify that a hostname or IP address is accessible.
+# Verifier que un hôte est disponible.
 
-# Import needed modules.
+# Importer des modules dont nous avons besoin
 import subprocess
 import sys
 
-# Set global variables.
-MAX_WAIT = '3'
+# définition variable globale
+MAX_ATTENTE = '3'
 
-# Determine address to ping.
-address = '127.0.0.1' # default
+# définir l'adresse IP à laquelle on va envoyer les paquets
+adresse = '127.0.0.1' # par défault
 if len(sys.argv) > 1:
-    address = sys.argv[1]
+    adresse = sys.argv[1]
 
-# Determine OS type and set shell_command accordingly.
+# déteriminer le genre de l'OS et définir `shell_command`.
 if sys.platform == 'darwin':
-    print("WARNING: This hasn't been tested on MacOS.")
-if sys.platform == 'linux' or platform == 'linux2' or platform == 'darwin':
-    shell_command = f"ping -w {MAX_WAIT} {address}"
+    print("ATTENTION: Ce script n'est pas encore vérifié sur MacOS.")
+if sys.platform == 'linux' or sys.platform == 'linux2' or sys.platform == 'darwin':
+    shell_command = f"ping -w {MAX_ATTENTE} {adresse}"
 elif sys.platform == 'win32':
-    shell_command = f"ping -w {MAX_WAIT} {address}"
-    # shell_command = f"ping /w {MAX_WAIT} {address}"
+    shell_command = f"ping -w {MAX_ATTENTE} {adresse}"
+    # shell_command = f"ping /w {MAX_ATTENTE} {adresse}"
 else:
-    print(f"Platform \"{sys.platform}\" is not yet supported.")
+    print(f"Ce script n'est pas compatible avec la plateforme \"{platform}\".")
     exit(1)
 
-# Run shell command.
+# Executer la commande shell
 completed_process = subprocess.run(
     shell_command,
     stdout=subprocess.PIPE,
@@ -36,9 +36,9 @@ completed_process = subprocess.run(
 
 # Set status depending on command returncode.
 if completed_process.returncode == 0:
-    status = 'up'
+    statut = 'active'
 else:
-    status = 'down'
+    statut = 'hors service'
 
-# Print results.
-print(f'Host "{address}" is {status}.')
+# Afficher les resultats.
+print(f'Hôte "{adresse}" est {statut}.')
