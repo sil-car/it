@@ -1,35 +1,35 @@
 #!/usr/bin/python3
 
-# Import commands from modules
+# Importer des modules dont nous avons besoin
 from subprocess import PIPE, run
 from sys import platform
 
-# Global variables
-SERVICENAME = "wuauserv"
-EXPECTED_COUNT = 1
+# Définition des variables globales
+NOM_DE_PROCESSUS = "wuauserv"
+NOMBRE_PREVU = 1
 
-# Determine OS type and set shell_command accordingly.
+# déteriminer le genre de l'OS et définir `shell_command`.
 if platform == 'darwin':
-    print("WARNING: This hasn't been tested on MacOS.")
+    print("ATTENTION: Ce script n'est pas encore vérifié sur MacOS.")
 if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
-    shell_command = "pgrep " + SERVICENAME + " -c"
+    shell_command = "pgrep " + NOM_DE_PROCESSUS + " -c"
 elif platform == 'win32':
-    shell_command = "sc query " + SERVICENAME + " | find \"RUNNING\" /c"
+    shell_command = "sc query " + NOM_DE_PROCESSUS + " | find \"RUNNING\" /c"
 else:
-    print(f"Platform \"{platform}\" is not yet supported.")
+    print(f"Ce script n'est pas compatible avec la plateforme \"{platform}\".")
     exit(1)
 
 # Note: this does not throw error on non-zero exit code.
-# The command will give us a numeric count of the number of running services/processe.
+# Cette commande nous donnera combien des processus sont en cours d'execution en chiffres.
 completed_process = run(shell_command,  check=False, stdout=PIPE, shell=True)
 if completed_process.returncode == 0:
-  command_output_as_str = completed_process.stdout.decode()
-  command_output_no_returns = command_output_as_str.strip()
-  number_of_procs = int(command_output_no_returns)
+  sortie_comme_string = completed_process.stdout.decode()
+  sortie_sans_fins_de_ligne = sortie_comme_string.strip()
+  nombre_des_procs = int(sortie_sans_fins_de_ligne)
 else:
-  number_of_procs = 0
+  nombre_des_procs = 0
 
-if number_of_procs != EXPECTED_COUNT:
-  print(f'Unexpected number of processes found: {number_of_procs}')
+if nombre_des_procs != NOMBRE_PREVU:
+  print(f'Nombre inattendu de processus trouvé: {nombre_des_procs}')
 else:
-  print("Process found!")	
+  print("Processus trouvé!")	

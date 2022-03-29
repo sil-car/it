@@ -1,45 +1,45 @@
 #!/usr/bin/python3
 
-# Developed by Brian Yee and Nate Marti.
+# Developpé par Brian Yee et Nate Marti.
 
-# Import needed commands from modules.
+# Importer des modules dont nous avons besoin
 from subprocess import check_output
 from sys import platform
 
-# Set global variable.
-THRESHOLD = 0.85
+# définition variable globale
+LIMITE = 0.85
 
-# Determine OS type and set shell_command accordingly.
+# déteriminer le genre de l'OS et définir `shell_command`.
 if platform == 'darwin':
-    print("WARNING: This hasn't been tested on MacOS.")
+    print("ATTENTION: Ce script n'est pas encore vérifié sur MacOS.")
 if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
     shell_command = "lsblk --bytes --output=FSAVAIL,MOUNTPOINT,SIZE | grep \"\s/\s\""
 elif platform == 'win32':
     shell_command = "wmic logicaldisk GET Name,Size,FreeSpace | find /i \"C:\""
 else:
-    print(f"Platform \"{platform}\" is not yet supported.")
+    print(f"Ce script n'est pas compatible avec la plateforme \"{platform}\".")
     exit(1)
 
-# Run shell command and parse output.
-command_output_as_bytes = check_output(shell_command, shell=True)
-command_output_as_str = command_output_as_bytes.decode()
-command_output_no_returns = command_output_as_str.strip()
-parsed_output = command_output_no_returns.split()
+# Executer la commande shell et parser ce qui sort
+sortie_comme_octets = check_output(shell_command, shell=True)
+sortie_comme_string = sortie_comme_octets.decode()
+sortie_sans_fins_de_ligne = sortie_comme_string.strip()
+sortie_parsee = sortie_sans_fins_de_ligne.split()
 
-# Define variables for usage numbers.
-free_space = int(parsed_output[0]) # convert to a number
-drive_letter = parsed_output[1]
-drive_capacity = int(parsed_output[2]) # convert to a number
+# Définir variables pour l'analyse
+espace_libre = int(sortie_parsee[0]) # convert to a number
+nom_de_disque = sortie_parsee[1]
+capacite = int(sortie_parsee[2]) # convert to a number
 
-# Calculate usage numbers.
-percentage_used = (drive_capacity - free_space) / drive_capacity
-percentage_output = "{:.2%}".format(percentage_used)
+# Calculer le pourcentage d'utilisation
+pourcentage_utilise = (capacite - espace_libre) / capacite
+pourcentage = "{:.2%}".format(pourcentage_utilise)
 
-# Output results.
-print(f'Drive {drive_letter} has capacity {drive_capacity} and has free {free_space}')
-print(f'This is {percentage_output}')
+# Afficher les resultats
+print(f'Le disque {nom_de_disque} a la capacité de {capacite} et il a l\'espace libre de {espace_libre}')
+print(f'Ça fait {pourcentage}')
 
-if (percentage_used > THRESHOLD):
-    print('Drive is approaching capacity')
+if (pourcentage_utilise > LIMITE):
+    print('Le disque s\'approche sa capacité')
 else:
-    print('Drive is OK')
+    print('Le disque est OK')
