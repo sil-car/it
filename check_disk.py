@@ -1,5 +1,6 @@
+#!/usr/bin/python3
+
 # Importation des modules.
-import subprocess
 import shutil
 from pathlib import Path
 
@@ -7,10 +8,12 @@ from pathlib import Path
 limite = 0.85
 
 # Évaluation de racine de disque.
-cwd = Path(".").resolve()
+# https://docs.python.org/fr/3/library/pathlib.html?highlight=cwd#pathlib.Path.cwd
+cwd = Path.cwd()
 root = cwd.root or cwd.drive
 
 # Recherche des détails du disque.
+# https://docs.python.org/fr/3/library/shutil.html?highlight=usage#shutil.disk_usage
 usage = shutil.disk_usage(root)
 
 # Calcul d'ultilisation de disque en pourcentage.
