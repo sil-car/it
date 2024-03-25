@@ -5,8 +5,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 
-OUTDIR = Path('./charts')
-OUTDIR.mkdir(parents=True, exist_ok=True)
+# style = 'ggplot'
+# style = 'bmh'
+# plt.style.use(style)
+# # plt.rc(grid=False)
+# OUTDIR = Path('./charts')
+# OUTDIR.mkdir(parents=True, exist_ok=True)
 
 
 def parse_cli():
@@ -186,16 +190,30 @@ def gen_comparison_plot(title=None):
     rot = 45
     width = 0.5
 
-    ax = df[[cols[0], cols[2]]].plot(
-        kind='bar',
-        figsize=(16, 9),
+    fig, ax = plt.subplots(1)
+    ax1 = df[cols[2]].plot(
+        ax=ax,
         secondary_y=cols[2],
         ylabel="FCFA",
+        use_index=False,
+        color=COLORS[1],
+        marker='o',
+        lw=3,
+        legend=True,
+    )
+    ax2 = df[cols[0]].plot(
+        ax=ax,
+        kind='bar',
+        color=COLORS[0],
         width=width,
         rot=rot,
+        legend=True,
+        figsize=(16, 9),
     )
+    ax.set_ylabel("Hours")
+    ax1.grid(False)
+    ax2.grid(False)
     ax.set_xticklabels(map(monthly_fmt, df.index))
-    ax.set_ylabel('Hours')
     ax.set_xlabel(None)
     plt.title(title)
 
@@ -273,6 +291,17 @@ def test():
 
 
 def main():
+    style = 'bmh'
+    plt.style.use(style)
+    plt.rc('axes', axisbelow=True)
+
+    global COLORS
+    COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    global OUTDIR
+    OUTDIR = Path('./charts')
+    OUTDIR.mkdir(parents=True, exist_ok=True)
+
     # pd.set_option('copy_on_write', True)
     args = parse_cli()
 
