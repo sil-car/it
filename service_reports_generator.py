@@ -19,6 +19,10 @@ def parse_cli():
         description="Generate reports from SIL CAR Services data",
     )
     parser.add_argument(
+        '--all', action='store_true',
+        help="produce all configured charts",
+    )
+    parser.add_argument(
         '--local', action='store_true',
         help="only include data from local 'face-to-face' sessions",
     )
@@ -285,6 +289,35 @@ def publish_plot(outfile=None, title=None):
         plt.savefig(outfile)
 
 
+def make_local_chart(outfile, df, cols, period):
+    title = "SIL CAR Face-to-Face Session Hours"
+    local_hours_df = df[df[cols[7]].str.startswith('In person')]
+    df_to_plot = gen_session_df(df=local_hours_df, period=period)
+    gen_session_plot(df_to_plot, title, period)
+    publish_plot(outfile, title)
+
+
+def make_modem_rate_chart(outfile):
+    title = "SIL CAR Modem Cost per Remote Session Hour"
+    gen_comparison_plot(title)
+    publish_plot(outfile, title)
+
+
+def make_remote_chart(outfile, df, cols, period):
+    title = "SIL CAR Remote Session Hours"
+    # Only keep rows where 'Session format' starts with 'Remote'.
+    remote_hours_df = df[df[cols[7]].str.startswith('Remote')]
+    df_to_plot = gen_session_df(df=remote_hours_df, period=period)
+    gen_session_plot(df_to_plot, title, period)
+    publish_plot(outfile, title)
+
+
+def make_teams_chart(outfile):
+    title = "ACATBA Teams' Remote Session Hours"
+    gen_teams_plot(title)
+    publish_plot(outfile, title)
+
+
 def test():
     """ For testing new features. """
     pass
@@ -324,29 +357,22 @@ def main():
         period = 'yearly'
 
     if args.remote:
-        title = "SIL CAR Remote Session Hours"
-        # Only keep rows where 'Session format' starts with 'Remote'.
-        remote_hours_df = sessions_df[sessions_df[cols[7]].str.startswith('Remote')]  # noqa: E501
-        df_to_plot = gen_session_df(df=remote_hours_df, period=period)
-        gen_session_plot(df_to_plot, title, period)
-        publish_plot(outfile, title)
+        make_remote_chart(outfile, sessions_df, cols, period)
 
     if args.local:
-        title = "SIL CAR Face-to-Face Session Hours"
-        local_hours_df = sessions_df[sessions_df[cols[7]].str.startswith('In person')]  # noqa: E501
-        df_to_plot = gen_session_df(df=local_hours_df, period=period)
-        gen_session_plot(df_to_plot, title, period)
-        publish_plot(outfile, title)
+        make_local_chart(outfile, sessions_df, cols, period)
 
     if args.modem_rate:
-        title = "SIL CAR Modem Cost per Remote Session Hour"
-        gen_comparison_plot(title)
-        publish_plot(outfile, title)
+        make_modem_rate_chart(outfile)
 
     if args.teams:
-        title = "ACATBA Teams' Remote Session Hours"
-        gen_teams_plot(title)
-        publish_plot(outfile, title)
+        make_teams_chart(outfile)
+
+    if args.all:
+        make_local_chart(outfile, sessions_df, cols, period)
+        make_remote_chart(outfile, sessions_df, cols, period)
+        make_modem_rate_chart(outfile)
+        make_teams_chart(outfile)
 
 
 if __name__ == '__main__':
