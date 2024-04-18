@@ -80,15 +80,25 @@ def gen_raw_session_df():
 
 def gen_raw_modem_df():
     reports_dir = Path.home() / Path("Drive/SIL Documents/Information (IT) Systems/internet purchases/GL Reports")  # noqa: E501
-    reports_file = reports_dir / "Combined CAR Bangui Internet.csv"
-    df = pd.read_csv(
-        reports_file,
-        header=None,
-        index_col=0,
-        parse_dates=True,
-        date_format="%d/%m/%Y",
-        thousands=','
-    )
+
+    # Get data from reports CSV files.
+    reports_files = reports_dir.glob('* CAR Bangui Internet: Communications.csv')  # noqa: E501
+    df = pd.concat([
+        pd.read_csv(
+            f,
+            header=None,
+            index_col=0,
+            parse_dates=True,
+            date_format="%d/%m/%Y",
+            thousands=','
+        ) for f in reports_files
+    ])
+    df.drop_duplicates()
+
+    # Save combined file for verification.
+    combined_file = reports_dir / "Combined CAR Bangui Internet.csv"
+    df.to_csv(combined_file, header=False)
+
     return df
 
 
@@ -141,6 +151,7 @@ def gen_session_plot(df=None, title=None, period='monthly'):
     ax.set_xlabel(None)
     plt.title(title)
     plt.rcParams.update({'font.size': 10})
+    return df
 
 
 def gen_comparison_df():
@@ -158,7 +169,11 @@ def gen_comparison_df():
     )
     dfm = dfm[~dfm[2].str.startswith(excl)]
     # Convert dates to DateTimes.
-    dfm.index = pd.to_datetime(dfm.index, format="%d-%b-%y")
+    try:
+        dfm.index = pd.to_datetime(dfm.index, format="%d-%b-%y")
+    except ValueError:
+        # Maybe date is not zero-padded.
+        dfm.index = pd.to_datetime(dfm.index, format='mixed', dayfirst=True)
     # Only keep column index 4.
     dfm = dfm[[4]]
     # Rename column.
@@ -179,7 +194,12 @@ def gen_comparison_df():
 
     df = dfs.join(dfm)
     cols = list(df.columns.values)
-    df["FCFA/hour"] = df.apply(calculate_rate, axis=1)
+    # Change 'NaN' values in 'Modem credit' column to '0'.
+    df[cols[1]] = df[cols[1]].fillna(0)
+    df["FCFA/hr"] = df.apply(calculate_monthly_rate, axis=1)
+    df["Cum. Hrs."] = df[cols[0]].cumsum()
+    df["Cum. Credit"] = df[cols[1]].cumsum()
+    df["FCFA/hr-to-date"] = df.apply(calculate_cum_rate, axis=1)
     print(df.to_string())
     return df
 
@@ -195,9 +215,9 @@ def gen_comparison_plot(title=None):
     width = 0.5
 
     fig, ax = plt.subplots(1)
-    ax1 = df[cols[2]].plot(
+    ax1 = df[cols[5]].plot(
         ax=ax,
-        secondary_y=cols[2],
+        secondary_y=cols[5],
         ylabel="FCFA",
         use_index=False,
         color=COLORS[1],
@@ -219,7 +239,11 @@ def gen_comparison_plot(title=None):
     ax2.grid(False)
     ax.set_xticklabels(map(monthly_fmt, df.index))
     ax.set_xlabel(None)
+    # ax.legend(loc=0)
+    ax1.legend(loc='upper right')
+    ax2.legend(loc='upper left')
     plt.title(title)
+    return df
 
 
 def gen_teams_df():
@@ -266,9 +290,10 @@ def gen_teams_plot(title=None):
     ax.set_xticklabels(map(monthly_fmt, df.index))
     ax.set_xlabel(None)
     plt.title(title)
+    return df
 
 
-def calculate_rate(row):
+def calculate_monthly_rate(row):
     if not row[1].is_integer():
         # print(row[1])
         rate = None
@@ -279,28 +304,41 @@ def calculate_rate(row):
     return rate
 
 
-def publish_plot(outfile=None, title=None):
+def calculate_cum_rate(row):
+    if not row[4].is_integer():
+        # print(row[1])
+        rate = None
+    elif row[3] == 0:
+        rate = float(0)
+    else:
+        rate = round(row[4] / row[3])
+    return rate
+
+
+def publish_plot(df=None, outfile=None, title=None):
     if outfile is None:
         outfile = OUTDIR / f"{title}.png"
+        csvfile = OUTDIR / f"{title}.csv"
 
     if not outfile:
         plt.show()
     else:
         plt.savefig(outfile)
+        df.to_csv(csvfile)
 
 
 def make_local_chart(outfile, df, cols, period):
     title = "SIL CAR Face-to-Face Session Hours"
     local_hours_df = df[df[cols[7]].str.startswith('In person')]
     df_to_plot = gen_session_df(df=local_hours_df, period=period)
-    gen_session_plot(df_to_plot, title, period)
-    publish_plot(outfile, title)
+    df = gen_session_plot(df_to_plot, title, period)
+    publish_plot(df, outfile, title)
 
 
 def make_modem_rate_chart(outfile):
     title = "SIL CAR Modem Cost per Remote Session Hour"
-    gen_comparison_plot(title)
-    publish_plot(outfile, title)
+    df = gen_comparison_plot(title)
+    publish_plot(df, outfile, title)
 
 
 def make_remote_chart(outfile, df, cols, period):
@@ -308,14 +346,14 @@ def make_remote_chart(outfile, df, cols, period):
     # Only keep rows where 'Session format' starts with 'Remote'.
     remote_hours_df = df[df[cols[7]].str.startswith('Remote')]
     df_to_plot = gen_session_df(df=remote_hours_df, period=period)
-    gen_session_plot(df_to_plot, title, period)
-    publish_plot(outfile, title)
+    df = gen_session_plot(df_to_plot, title, period)
+    publish_plot(df, outfile, title)
 
 
 def make_teams_chart(outfile):
     title = "ACATBA Teams' Remote Session Hours"
-    gen_teams_plot(title)
-    publish_plot(outfile, title)
+    df = gen_teams_plot(title)
+    publish_plot(df, outfile, title)
 
 
 def test():
