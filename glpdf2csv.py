@@ -72,6 +72,9 @@ def write_lines_to_csv(lines, csv_file_path_obj):
 
 
 def main():
+    if sys.argv[1] in ['-h', '--help']:
+        print(f"usage: {sys.argv[0]} /PATH/TO/PDF")
+        exit()
     pdf_file = Path(sys.argv[1]).expanduser().resolve()
     date = get_date_from_file_name(pdf_file)
     if len(sys.argv) > 2:
