@@ -285,7 +285,7 @@ def gen_teams_plot(title=None):
         figsize=(16, 9),
         ylabel="Hours",
         rot=45,
-        width=0.75,
+        width=1,
     )
     ax.set_xticklabels(map(monthly_fmt, df.index))
     ax.set_xlabel(None)
