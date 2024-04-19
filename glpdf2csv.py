@@ -24,6 +24,7 @@ def get_date_from_file_name(pdf_file_path_obj):
 
 
 def text_from_pdf(pdf_file_path_obj):
+    print(f"Reading: {pdf_file_path_obj.name}")
     with pdf_file_path_obj.open('rb') as f:
         pdf_pgs = pdftotext.PDF(f)
 
@@ -34,10 +35,11 @@ def text_from_pdf(pdf_file_path_obj):
 def filter_account_entries(report_text, full_account_name):
     expr = rf'^ *\d{{5}}-R51057 +{full_account_name}\s+Beginning Balance.*\n((?: *GLJE.+\n)+)'  # noqa: E501
     account_text_results_pgs = re.findall(expr, report_text, flags=re.MULTILINE)  # noqa: E501
-    if len(account_text_results_pgs) == 0:
-        print(f"No data found for \"{full_account_name}\"")
-        exit()
     account_entry_lines = []
+    if len(account_text_results_pgs) == 0:
+        print(f"No data found for: {full_account_name}")
+        return account_entry_lines
+
     for pg in account_text_results_pgs:
         account_entry_lines.extend(pg.split('\n'))
     # Remove empty lines.
@@ -71,20 +73,33 @@ def write_lines_to_csv(lines, csv_file_path_obj):
         csvw.writerows(csv_rows)
 
 
+def pdf_to_csv(pdf_file, account_name=None, outdir=None):
+    pdfobj = Path(pdf_file)
+    date = get_date_from_file_name(pdfobj)
+    if not account_name:
+        account_name = "Bangui Internet: Communications"
+
+    csv_filename = f"{date} CAR {account_name}.csv"
+    if not outdir:
+        csv_parent = pdfobj.parent
+    else:
+        csv_parent = Path(outdir)
+    csv_file = csv_parent / csv_filename
+    text = text_from_pdf(pdfobj)
+    account_entry_lines = filter_account_entries(text, account_name)
+    if account_entry_lines:
+        write_lines_to_csv(account_entry_lines, csv_file)
+
+
 def main():
     if sys.argv[1] in ['-h', '--help']:
         print(f"usage: {sys.argv[0]} /PATH/TO/PDF")
         exit()
     pdf_file = Path(sys.argv[1]).expanduser().resolve()
-    date = get_date_from_file_name(pdf_file)
+    account_name = None
     if len(sys.argv) > 2:
         account_name = sys.argv[2]
-    else:
-        account_name = "Bangui Internet: Communications"
-    csv_file = pdf_file.with_name(f"{date} CAR {account_name}.csv")
-    text = text_from_pdf(pdf_file)
-    account_entry_lines = filter_account_entries(text, account_name)
-    write_lines_to_csv(account_entry_lines, csv_file)
+    pdf_to_csv(pdf_file, account_name=account_name)
 
 
 if __name__ == '__main__':
